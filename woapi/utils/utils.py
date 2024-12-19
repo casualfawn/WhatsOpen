@@ -87,7 +87,3 @@ def get_company_names_list(companiesdf):
     for i in range(count):
         clist.append(''.join(companiesls[-1:]))
     return clist
-
-
-
-
