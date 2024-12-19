@@ -59,3 +59,35 @@ def structure_days_list(wkfin):
             if daystr[j:j+3] in charlist and '-' not in daystr:
                 res.append(daystr) #if 'Day' append to list in sep sublist
     return res
+
+def get_company_names_list(companiesdf):
+    count = 0
+    tracker = 0
+    cnames = list()
+    curr = 1
+    clist = []
+    companiesls = companiesdf['Restaurant Name'].tolist()
+    wordlist = companiesdf['Hours'].tolist()
+    for word in wordlist:
+        for i in range(curr):
+            curr = 1
+            clist.append(companiesls[tracker - 1])
+            for letter in word:
+                if letter == '/':  # don't skip
+                    curr += 1  # how many times to add to companies list
+        tracker += 1
+    clist = clist[1:]
+
+    wordendlist = wordlist[-1:]
+    count = 1
+    for word in wordendlist:
+        for letter in word:
+            if '/' == letter:
+                count += 1
+    for i in range(count):
+        clist.append(''.join(companiesls[-1:]))
+    return clist
+
+
+
+

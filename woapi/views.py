@@ -13,7 +13,6 @@ import datetime
 # Transformation and Storage Endpoint for csv file
 class StoreInitialCsvView(APIView):
     parser_classes = [MultiPartParser, FormParser]
-
 #   @api_view(['POST']) for fx based view, define post
     def post(self, request):
        # file = request.FILES['file']
