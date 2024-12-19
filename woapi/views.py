@@ -8,7 +8,7 @@ from .models import TransformedCompanyData
 from .serializers import TransformedCompanyDataSerializer
 from woapi.utils.utils import *
 import pandas as pd
-import datetime
+from datetime import datetime
 
 # Transformation and Storage Endpoint for csv file
 class StoreInitialCsvView(APIView):
@@ -16,7 +16,7 @@ class StoreInitialCsvView(APIView):
 #   @api_view(['POST']) for fx based view, define post
     def post(self, request):
         file = request.FILES['file']
-        companiesdf = transform_company_df(pd.read_csv(file))
+        companiesdf = transform_company_df(pd.read_csv('file'))
         for i, j in companiesdf.iterrows():
             companies_data = {
                 'wkday':j['wkday'],
@@ -57,9 +57,16 @@ class GetAllView(APIView):
 # Endpoint to get company data based on date time string input
 class GetOpenCompaniesView(APIView):
     def get(self, request, *args, **kwargs):
-        all_restaurant_data = TransformedCompanyData.objects.all()
-        if not all_restaurant_data:
-            return Response({"message": "No data available to process"}, status=status.HTTP_404_NOT_FOUND)
+        input_date = request.query_params.get('date', None)
+        if not input_date:
+            return Response({"No date was provided."}, status=status.HTTP_400_BAD_REQUEST)
+        input_date = datetime.strptime(input_date, '%Y-%m-%dT%H:%M:%S')
+        input_date_wkday = input_date.strftime('%a')
+        input_date_time = input_date.time()
+        open_companies = TransformedCompanyData.objects.filter(wkday = input_date_wkday,open__lt=input_date_time, close__gt=input_date_time)
+        serializer = TransformedCompanyDataSerializer(open_companies, many = True)
 
-        serializer = TransformedCompanyDataSerializer(all_restaurant_data, many=True)
-        return Response(serializer.data)
+        if not open_companies:
+            return Response({"Data incorrectly provided"}, status=status.HTTP_404_NOT_FOUND)
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
