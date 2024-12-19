@@ -8,6 +8,7 @@ from .models import TransformedCompanyData
 from .serializers import TransformedCompanyDataSerializer
 from woapi.utils.utils import *
 import pandas as pd
+import os
 from datetime import datetime
 
 # Transformation and Storage Endpoint for csv file
@@ -15,8 +16,9 @@ class StoreInitialCsvView(APIView):
     parser_classes = [MultiPartParser, FormParser]
 #   @api_view(['POST']) for fx based view, define post
     def post(self, request):
-        file = request.FILES['file']
-        companiesdf = transform_company_df(pd.read_csv('file'))
+       # file = request.FILES['file']
+        filepath_loc = os.path.join(os.path.expanduser("~/"), "comps.csv")
+        companiesdf = transform_company_df(pd.read_csv(filepath_loc))
         for i, j in companiesdf.iterrows():
             companies_data = {
                 'wkday':j['wkday'],

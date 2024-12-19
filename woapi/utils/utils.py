@@ -88,3 +88,82 @@ def get_company_names_list(companiesdf):
         clist.append(''.join(companiesls[-1:]))
     return clist
 
+def convert_to_time_type(time_str):
+    """Converts time strings like '5 pm', '12:30 am' to datetime.time object"""
+    return datetime.strptime(time_str, '%I:%M %p').time() if ':' in time_str else datetime.strptime(time_str,
+                                                                                                    '%I %p').time()
+
+def extract_times(time_string):
+    # Define a regular expression pattern to capture times (with optional minutes and AM/PM)
+    time_pattern = r'(\d{1,2}:\d{2}\s?[apm]{2}|\d{1,2}\s?[apm]{2})'
+
+    # Split the input string by the '/' separator
+    sections = time_string.split('/')
+    extracted_times = []
+    for section in sections:
+        # Find all matches (start and end times) in the current section
+        times = re.findall(time_pattern, section.strip())
+
+        if len(times) == 2:
+            # Convert both start and end times to datetime.time objects
+            start_time = convert_to_time_type(times[0])
+            end_time = convert_to_time_type(times[1])
+            extracted_times.append((start_time, end_time))
+
+    return extracted_times
+
+def conv_extracted_times_list(companiesdataframe):
+    temp = companiesdataframe['Hours'].tolist()
+    res = []
+    for i in range(len(temp)):
+        new = extract_times(temp[i])
+        res.append(new)
+        for j in new:
+            res.append(j)
+    return res
+
+def cleanup_times(res):
+    timeslist = [xx for xx in res]
+    timelist = [x for xs in timeslist for x in xs]
+    timeres = []
+    for xx in timelist:
+        if isinstance(xx, tuple):
+            timeres.append(xx)
+    return timeres
+
+def replace_midnight_with_close_time(df): #function to replace midnight with 11:59, feeds into overlap edge case fx
+    # Loop through the dataframe and replace 12:00 AM with 11:59 PM
+    df['close'] = df['close'].apply(lambda x: time(23, 59, 59) if x == time(0, 0, 0) else x)
+
+    return df
+
+def add_bins_for_time_overlap(df): #if the close time < open time, we need to add a new row with 00:00:00 open and same close
+    new_rows = []
+    for index, row in df.iterrows():
+        if row['close'] < row['open']:
+            new_row = {'open': time(0, 0), 'close': row['close'], 'company_name':row['company_name'], 'wkday':row['wkday']}
+            new_rows.append(new_row)
+
+    # Append new rows to the original dataframe
+    df_new_rows = pd.DataFrame(new_rows)
+    df = pd.concat([df, df_new_rows], ignore_index=True).sort_values(by='open').reset_index(drop=True)
+    return df
+
+def transform_company_df(companiesdf):
+    res_time = conv_extracted_times_list(companiesdf)
+    res_time = cleanup_times(res_time)
+    wk_ranges_and_days = wkdays_from_input(companiesdf)
+    res_days = structure_days_list(wk_ranges_and_days)
+    company_names = get_company_names_list(companiesdf)
+    open_close_temp_df = pd.DataFrame(res_time, columns=['open', 'close'])
+    compdf_transformed = pd.DataFrame({
+        'wkday': res_days,
+        'company_name': company_names,
+    })
+    compdf_transformed = pd.concat([compdf_transformed, open_close_temp_df], axis=1)
+    compdf_transformed = compdf_transformed.explode('wkday', ignore_index=True)
+    compdf_transformed = replace_midnight_with_close_time(compdf_transformed)
+    compdf_transformed = add_bins_for_time_overlap(compdf_transformed)
+    return compdf_transformed
+
+

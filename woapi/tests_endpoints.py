@@ -26,3 +26,6 @@ class TestStoreSingleEntryApiTest(ApiTestCase):
         self.assertEqual(response.data['wkday'], self.company_data['wkday'])
 
 
+    # write a test to test the entries that have the new binned 00:00:00 to close time.
+
+
