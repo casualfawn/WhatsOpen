@@ -75,3 +75,4 @@ class GetOpenCompaniesView(APIView):
             return Response({"Data incorrectly provided"}, status=status.HTTP_404_NOT_FOUND)
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+

@@ -1,5 +1,5 @@
 from django.urls import path, include
-from .views import StoreInitialCsvView, StoreSingleEntryView, GetOpenCompaniesView, GetAllView #,getview,postview
+from .views import StoreInitialCsvView, StoreSingleEntryView, GetOpenCompaniesView, GetAllView
 
 urlpatterns = [
     path('transformandstorecsv/', StoreInitialCsvView().as_view(), name='transformandstorecsv'),
