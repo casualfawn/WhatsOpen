@@ -150,6 +150,7 @@ def add_bins_for_time_overlap(df): #if the close time < open time, we need to ad
     return df
 
 def transform_company_df(companiesdf):
+
     res_time = conv_extracted_times_list(companiesdf)
     res_time = cleanup_times(res_time)
     wk_ranges_and_days = wkdays_from_input(companiesdf)

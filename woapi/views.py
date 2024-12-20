@@ -40,10 +40,13 @@ class StoreSingleEntryView(APIView):
     def post(self, request, *args, **kwargs):
         serializer = TransformedCompanyDataSerializer(data = request.data)
         if serializer.is_valid():
-            serializer.save()
-            print('New Restaurant Data stored successfully')
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response({"No data provided"}, status=status.HTTP_400_BAD_REQUEST)
+            if len(request.data) == 4:
+                serializer.save()
+                print('New Restaurant Data stored successfully')
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            print('Invalid Data Provided')
+            return Response({"No data provided"}, status=status.HTTP_400_BAD_REQUEST)
 
 
 # Endpoint to get all companies data

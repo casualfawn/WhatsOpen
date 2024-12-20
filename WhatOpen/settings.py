@@ -15,7 +15,7 @@ if os.path.isfile(dotenv_f):
 SECRET_KEY = os.environ['SECRET_KEY']
 DEBUG = True
 
-ALLOWED_HOSTS = ['127.0.0.1']
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 
 
 # Application definition
@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'woapi',
+    'WhatOpen',
 ]
 
 MIDDLEWARE = [
