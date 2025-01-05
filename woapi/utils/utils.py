@@ -30,12 +30,12 @@ def convert_weekday_range(weekday_range): #converts 'Day-Day' to full range [Day
     days_map = {
         'Mon': 0, 'Tue': 1, 'Wed': 2, 'Thu': 3, 'Fri': 4, 'Sat': 5, 'Sun': 6
     }
+
     reverse_days_map = {v: k for k, v in days_map.items()}
     start_day, end_day = weekday_range.split('-')
     start_day_num = days_map[start_day]
     end_day_num = days_map[end_day]
 
-    # Get range of weekdays
     if start_day_num <= end_day_num:
         weekdays_in_range = list(range(start_day_num, end_day_num + 1))
     else:
