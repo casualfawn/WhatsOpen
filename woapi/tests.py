@@ -12,6 +12,13 @@ from .serializers import TransformedCompanyDataSerializer
 from . import views
 from .utils.utils import transform_company_df
 
+
+#class TestDaysOutFun():
+
+    #def performance test comparing old DaysOutFun to new DaysOutFun
+    #def multiple input conds based on day/time strings
+
+
 class TestStoreSingleEntryApiTest(APITestCase):
 
     def test_store_new_company_record(self):

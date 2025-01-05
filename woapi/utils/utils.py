@@ -3,28 +3,18 @@ import pandas as pd
 import re
 
 #Funs to extract Day Ranges and individual Days from input string Hours Column
-def wkdays_from_input(companiesdataframe):
-    input_string = companiesdataframe['Hours'].tolist()
-    input_string = ''.join(input_string) # convert df column to string
-    input_string = input_string.replace(' ', '') # rm space
-    input_string = input_string.replace('Tues', 'Tue') #format for indexing (3 letter abbr)
-    charlist = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-    fin = [] #output list
-    #iterate to extract 'Day-Day' and 'Day' from string.
-    for i in range(len(input_string)-2):
-        daystr = input_string[i:i+3]
-        if daystr in charlist:
-            daystrcheck = input_string[i:i+4]
-            if '-' == daystrcheck[3]:
-                daystr = input_string[i:i+8]
-                if ',' == daystr[7]:
-                    daystr = input_string[i:i+11]
-                else:
-                    daystr = input_string[i:i+7]
-                fin.append(daystr)
-            if input_string[i:i+3] in charlist and input_string[i-1] == '/' and len(daystr) != 7:
-                fin.append(daystr)
-    return fin #returns 'Day-Day' and 'Day' as sep list items
+def extract_days_after_comma(temp_match, matches_comma):
+    if matches_comma:
+        temp_comma = matches_comma[0]
+        temp_match = ','.join(temp_match) + ',' + temp_comma
+        temp_match = temp_match.split(',')
+    return temp_match
+
+def extract_days_after_slash(matches_slash, days_out, pattern):
+    for part in matches_slash[1:]:
+        temp_slash = re.findall(pattern, part)
+        days_out.append(temp_slash[0][0])
+    return days_out
 
 def convert_weekday_range(weekday_range): #converts 'Day-Day' to full range [Day, Day, Day...]
     days_map = {
@@ -43,22 +33,37 @@ def convert_weekday_range(weekday_range): #converts 'Day-Day' to full range [Day
 
     return [reverse_days_map[day_num] for day_num in weekdays_in_range]
 
-def structure_days_list(wkfin):
-    res = list() #output ls
-    charlist = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-    for i in range(len(wkfin)):
-        daystr = wkfin[i]
-        for j in range(len(daystr)):
-            if daystr[j] == '-':
-                # get the days of the range mon-fri
-                temp = convert_weekday_range(daystr[j-3:j+4])
-                newday = wkfin[i].replace(''.join(daystr[j-3:j+4]), '')
-                if ',' in newday: #if ',Day' append to sublist item's date range
-                    temp.append(newday[1:len(newday)])
-                res.append(temp)
-            if daystr[j:j+3] in charlist and '-' not in daystr:
-                res.append(daystr) #if 'Day' append to list in sep sublist
-    return res
+def convert_day_range(matches):
+    if '-' in matches[0][0]:
+        temp_match = convert_weekday_range(matches[0][0])
+    else:
+        temp_match = list(matches[0][0])
+    return temp_match
+
+def days_out_fun(companiesdf):
+    data_list = companiesdf['Hours'].to_list()
+    data_list = [s.replace('Tues', 'Tue') for s in data_list]
+    days_out = []
+    for i in range(len(data_list)):
+        # Match days and ranges: "Mon-Fri" or "Mon"
+        pattern = r'(\\?\s?\w{3}-\w{3}|\s?\\?\w{3})(?:\s*-\s*(\w{3}))?'
+        matches = re.findall(pattern, data_list[i])
+        # Match days and day ranges directy after a comma "Mon-Fri," "Mon,"
+        pattern_comma = r',\s*([A-Za-z]{3})(?=\s)'
+        matches_comma = re.findall(pattern_comma, data_list[i])
+        # Match days and ranges that come directly after a slash: " / Mon-Fri", " / Mon"
+        matches_slash = data_list[i].split(' / ')
+        # Convert Day Ranges to list of days "Mon-Tue" to "Mon, Tue"
+        day_or_day_range = convert_day_range(matches)
+        # If comma then additional days include days after comma [["Mon, Tue"], ["Thu"]] to [["Mon", "Tue", "Thu"]]
+        day_or_day_range = extract_days_after_comma(day_or_day_range, matches_comma)
+        # Append list of open days before a slash to output list
+        days_out.append(day_or_day_range)
+        # Append the additional days or day ranges that occur after a "/": "Mon-Tue 9am to 9pm / Wed 9am to 5pm" to [["Mon","Tue"],["Wed"]]
+        days_out = extract_days_after_slash(matches_slash, days_out, pattern)
+
+    return days_out
+
 
 def get_company_names_list(companiesdf):
     count = 0
@@ -150,11 +155,9 @@ def add_bins_for_time_overlap(df): #if the close time < open time, we need to ad
     return df
 
 def transform_company_df(companiesdf):
-
     res_time = conv_extracted_times_list(companiesdf)
     res_time = cleanup_times(res_time)
-    wk_ranges_and_days = wkdays_from_input(companiesdf)
-    res_days = structure_days_list(wk_ranges_and_days)
+    res_days = days_out_fun(companiesdf)
     company_names = get_company_names_list(companiesdf)
     open_close_temp_df = pd.DataFrame(res_time, columns=['open', 'close'])
     compdf_transformed = pd.DataFrame({
